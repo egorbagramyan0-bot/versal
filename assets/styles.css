@@ -1286,3 +1286,7 @@ html.sm-is-open .site-header { box-shadow: none; }
 
 /* пока виден прелоадер, интро сцены стоит на паузе */
 .pl-on:not(.pl-done) .hall, .pl-on:not(.pl-done) .hall * { animation-play-state: paused !important; }
+
+/* нижняя панель «Позвонить / Узнать условия» убрана с сайта */
+.dock { display: none !important; }
+@media (max-width: 900px) { .site-footer { padding-bottom: calc(40px + env(safe-area-inset-bottom)); } }
