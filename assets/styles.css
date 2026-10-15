@@ -1264,7 +1264,7 @@ html.sm-is-open .site-header { box-shadow: none; }
 
 @media (max-width: 640px) {
   .ev-sec:not(.ev-no-depth) .ev-track { display: none; }
-  .ev-sec:not(.ev-no-depth) .ev-depth { display: flex; height: 470px; margin: 0; }
+  .ev-sec:not(.ev-no-depth) .ev-depth { display: flex; height: 500px; margin: 0; }
   .ev-sec:not(.ev-no-depth) .ev-depth-cap { display: grid; }
 }
 @media (prefers-reduced-motion: reduce) {

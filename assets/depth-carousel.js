@@ -33,7 +33,8 @@
     showIndicators: true,
     label: 'Карусель',
     onChange: null,
-    onOpen: null // сайт: нажатие на уже выбранную карточку
+    onOpen: null, // сайт: нажатие на уже выбранную карточку
+    fitPadding: 120 // сайт: запас по ширине при подгонке масштаба (в оригинале 120)
   };
 
   function mount(root, options) {
@@ -189,7 +190,7 @@
     /* ---------- размер ---------- */
     var ro = new ResizeObserver(function (entries) {
       var w = entries[0].contentRect.width;
-      var needed = cfg.cardWidth + Math.abs(cfg.spread) * 2 + 120;
+      var needed = cfg.cardWidth + Math.abs(cfg.spread) * 2 + cfg.fitPadding;
       scale = clamp(w / needed, 0.4, 1);
       layout(pos);
     });
