@@ -216,13 +216,15 @@
     root.addEventListener('pointerdown', function (e) {
       if (cfg.count < 2) return;
       if (tween) tween.kill();
-      drag = { x: e.clientX, startPos: pos, startFocus: focus, lastX: e.clientX, lastT: performance.now(), v: 0, moved: false, id: e.pointerId };
+      var cardEl = e.target && e.target.closest ? e.target.closest('.depth-carousel__card') : null;
+      drag = { x: e.clientX, y: e.clientY, startPos: pos, startFocus: focus, lastX: e.clientX, lastT: performance.now(), v: 0, moved: false, id: e.pointerId,
+        card: cards.indexOf(cardEl), slop: e.pointerType === 'mouse' ? 4 : 10 };
     });
     root.addEventListener('pointermove', function (e) {
       if (!drag) return;
       var stepPx = Math.max(cfg.cardWidth * 0.55 * scale, 40);
       var dx = e.clientX - drag.x;
-      if (!drag.moved && Math.abs(dx) > 4) {
+      if (!drag.moved && Math.abs(dx) > drag.slop) {
         drag.moved = true;
         try { root.setPointerCapture(drag.id); } catch (err) {}
       }
@@ -236,14 +238,22 @@
       if (cfg.oneStep) pos = clamp(pos, drag.startPos - 1, drag.startPos + 1);
       layout(pos);
     });
-    var lastDragMoved = false;
-    function onPointerEnd() {
+    var lastDragMoved = false, suppressClick = 0;
+    function onPointerEnd(e) {
       if (!drag) return;
       var d = drag;
       drag = null;
       lastDragMoved = d.moved;
       setTimeout(function () { lastDragMoved = false; }, 0);
-      if (!d.moved) return;
+      if (!d.moved) {
+        // сайт: касание без свайпа обрабатываем здесь, не полагаясь на click
+        // (на телефоне click после касания мог уйти не на карточку или не прийти вовсе)
+        if (e && e.type === 'pointerup' && d.card >= 0) {
+          suppressClick = performance.now() + 600;
+          onCardClick(d.card, true);
+        }
+        return;
+      }
       var stepPx = Math.max(cfg.cardWidth * 0.55 * scale, 40);
       if (cfg.oneStep) {
         // сайт: не дальше одной карточки за свайп — по направлению движения
@@ -266,8 +276,9 @@
       else if ((e.key === 'Enter' || e.key === ' ') && e.target === root && cfg.onOpen) { e.preventDefault(); cfg.onOpen(focus, data[focus]); }
     });
 
-    function onCardClick(index) {
+    function onCardClick(index, fromTap) {
       if (lastDragMoved) return;
+      if (!fromTap && performance.now() < suppressClick) return; // уже обработано касанием
       // сайт: нажатие на переднюю карточку открывает её, на остальные — выводит вперёд
       if (index === focus && cfg.onOpen) { cfg.onOpen(index, data[index]); return; }
       setFocus(index, true);
