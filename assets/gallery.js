@@ -44,9 +44,9 @@
   if (window.DepthCarousel) {
     window.DepthCarousel.mount(depthBox, {
       items: events.map(function (e) { return { image: e.cover || e.photos[0].src, alt: e.title + (e.date ? ', ' + e.date : '') }; }),
-      cardWidth: 300, cardHeight: 400, radius: 6, fitPadding: 40,
-      tint: '#cfd4da', depth: 200, spread: 28, tilt: 18,
-      perspective: 1200, visibleCards: 3, falloff: 0.14, blur: 4,
+      cardWidth: 290, cardHeight: 386, radius: 6, fitPadding: -40, offsetX: -26, oneStep: true,
+      tint: '#cfd4da', depth: 200, spread: 66, tilt: 14,
+      perspective: 1200, visibleCards: 3, falloff: 0.07, blur: 1.5,
       duration: 700, ease: 'power3.out', loop: true, showControls: false,
       label: 'Праздники в «Версале»',
       onChange: function (i) { showCap(i); },

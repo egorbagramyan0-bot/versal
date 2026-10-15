@@ -34,7 +34,9 @@
     label: 'Карусель',
     onChange: null,
     onOpen: null, // сайт: нажатие на уже выбранную карточку
-    fitPadding: 120 // сайт: запас по ширине при подгонке масштаба (в оригинале 120)
+    fitPadding: 120, // сайт: запас по ширине при подгонке масштаба (в оригинале 120)
+    oneStep: false, // сайт: один свайп — ровно одна карточка (в оригинале свайп с инерцией)
+    offsetX: 0 // сайт: сдвиг всей стопки по горизонтали, px (чтобы задние карточки выглядывали)
   };
 
   function mount(root, options) {
@@ -139,7 +141,7 @@
         var blurPx = cfg.blur > 0 ? Math.min(cfg.blur, (back / Math.max(1, cfg.visibleCards)) * cfg.blur) : 0;
         var zi = Math.round(2000 - d * 20);
 
-        el.style.transform = 'translate(-50%, -50%) scale(' + sc + ') translateX(' + tx.toFixed(2) + 'px) translateZ(' + tz.toFixed(2) + 'px) rotateY(' + ry.toFixed(3) + 'deg)';
+        el.style.transform = 'translate(-50%, -50%) translateX(' + cfg.offsetX + 'px) scale(' + sc + ') translateX(' + tx.toFixed(2) + 'px) translateZ(' + tz.toFixed(2) + 'px) rotateY(' + ry.toFixed(3) + 'deg)';
         el.style.opacity = opacity.toFixed(3);
         el.style.filter = 'brightness(' + brightness.toFixed(3) + ') blur(' + blurPx.toFixed(2) + 'px)';
         el.style.zIndex = String(zi);
@@ -214,7 +216,7 @@
     root.addEventListener('pointerdown', function (e) {
       if (cfg.count < 2) return;
       if (tween) tween.kill();
-      drag = { x: e.clientX, startPos: pos, lastX: e.clientX, lastT: performance.now(), v: 0, moved: false, id: e.pointerId };
+      drag = { x: e.clientX, startPos: pos, startFocus: focus, lastX: e.clientX, lastT: performance.now(), v: 0, moved: false, id: e.pointerId };
     });
     root.addEventListener('pointermove', function (e) {
       if (!drag) return;
@@ -231,6 +233,7 @@
       drag.lastX = e.clientX;
       drag.lastT = now;
       pos = drag.startPos - dx / stepPx;
+      if (cfg.oneStep) pos = clamp(pos, drag.startPos - 1, drag.startPos + 1);
       layout(pos);
     });
     var lastDragMoved = false;
@@ -242,6 +245,14 @@
       setTimeout(function () { lastDragMoved = false; }, 0);
       if (!d.moved) return;
       var stepPx = Math.max(cfg.cardWidth * 0.55 * scale, 40);
+      if (cfg.oneStep) {
+        // сайт: не дальше одной карточки за свайп — по направлению движения
+        var moved = pos - d.startPos, dir = 0;
+        if (Math.abs(moved) > 0.18) dir = moved > 0 ? 1 : -1;
+        else if (Math.abs(d.v) > 0.35) dir = d.v < 0 ? 1 : -1;
+        setFocus(d.startFocus + dir, true);
+        return;
+      }
       var projected = pos - (d.v * 180) / stepPx;
       setFocus(Math.round(projected), true);
     }
