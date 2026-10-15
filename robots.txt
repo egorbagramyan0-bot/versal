@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /photo/
+Disallow: /integrations/
+
+# После выбора домена добавьте строку:
+# Sitemap: https://ВАШ-ДОМЕН/sitemap.xml

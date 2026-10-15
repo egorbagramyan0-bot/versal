@@ -1,0 +1,7 @@
+# Не публикуется на Vercel: исходники, рабочие заметки, служебные папки
+photo/
+integrations/
+.claude/
+LAUNCH.md
+*.md
+_*.html

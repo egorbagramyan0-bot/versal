@@ -1,0 +1,11 @@
+# исходники фото и рабочие материалы — в репозиторий не кладём
+photo/
+Бриф для Claude — Версаль.md
+_*.html
+
+# служебное
+.claude/
+.vercel/
+node_modules/
+.DS_Store
+Thumbs.db
