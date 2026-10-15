@@ -32,6 +32,9 @@
     return;
   }
 
+  // при «уменьшении движения» анимации меню проходят почти мгновенно
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) gsap.globalTimeline.timeScale(20);
+
   var position = wrapper.getAttribute('data-position') || 'right';
   var menuButtonColor = wrapper.getAttribute('data-button-color') || '#17191c';
   var openMenuButtonColor = wrapper.getAttribute('data-open-button-color') || menuButtonColor;

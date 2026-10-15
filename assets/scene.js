@@ -142,20 +142,49 @@
     seed = 7;
     svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
     while (svg.firstChild) svg.removeChild(svg.firstChild);
-    svg.classList.toggle('is-static', !animate);
     defs(svg);
+
+    // Сцена разнесена по отдельным <svg>-слоям: так браузер анимирует слои целиком
+    // (прозрачность и сдвиг — без перерисовки) и не перерисовывает 1800 элементов на каждом кадре.
+    function layer(name, beforeBase) {
+      var id = 'hall-layer-' + name;
+      var l = document.getElementById(id);
+      if (!l) {
+        l = document.createElementNS(NS, 'svg');
+        l.id = id;
+        l.setAttribute('class', 'hall hall-layer hall-layer--' + name);
+        l.setAttribute('aria-hidden', 'true');
+        l.setAttribute('focusable', 'false');
+      }
+      l.setAttribute('preserveAspectRatio', svg.getAttribute('preserveAspectRatio') || 'xMidYMid slice');
+      l.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      while (l.firstChild) l.removeChild(l.firstChild);
+      if (beforeBase) svg.parentNode.insertBefore(l, svg);
+      else svg.parentNode.insertBefore(l, (layer.last || svg).nextSibling);
+      if (!beforeBase) layer.last = l;
+      return l;
+    }
+    layer.last = null;
+    var Lreflect = layer('reflect', true);
+    var Lglow = layer('glow'), Lfurn = layer('furn'), Lchand = layer('chand'), Lglint = layer('glint');
+    var all = [svg, Lreflect, Lglow, Lfurn, Lchand, Lglint];
+    function setAll(cls, on) { all.forEach(function (l) { l.classList.toggle(cls, on); }); }
+    setAll('is-static', !animate);
+    setAll('is-drawing', false);
+    setAll('is-lit', false);
+    clearTimeout(buildHall.t1); clearTimeout(buildHall.t2);
 
     function P(x, y, z) { return [C.cx + C.f * x / z, C.cy - C.f * (y - C.camY) / z]; }
     function sw(z) { return clamp(10 / z, 0.55, 1.5).toFixed(2); }
 
     var X = 8.6, HC = 6.3, ZN = 1.1, ZF = 21.5;
     var gFloor = el('g', { 'class': 'g-floor' }, svg);
-    var gReflect = el('g', { 'class': 'g-reflect', mask: 'url(#vg-reflect-mask)' }, svg);
+    var gReflect = el('g', { 'class': 'g-reflect', mask: 'url(#vg-reflect-mask)' }, Lreflect);
     var gArch = el('g', { 'class': 'g-arch' }, svg);
-    var gGlow = el('g', { 'class': 'g-glow' }, svg);
-    var gFurn = el('g', { 'class': 'g-furn' }, svg);
-    var gChand = el('g', { 'class': 'g-chand' }, svg);
-    var gGlint = el('g', { 'class': 'g-glint' }, svg);
+    var gGlow = el('g', { 'class': 'g-glow' }, Lglow);
+    var gFurn = el('g', { 'class': 'g-furn' }, Lfurn);
+    var gChand = el('g', { 'class': 'g-chand' }, Lchand);
+    var gGlint = el('g', { 'class': 'g-glint' }, Lglint);
 
     function delayFor(z) { return (0.05 + (ZF - z) / ZF * 1.1 + rnd() * 0.15).toFixed(2) + 's'; }
     function stroke(parent, d, z, cls) {
@@ -389,12 +418,19 @@
     items.sort(function (a, b) { return b.z - a.z; }).forEach(function (it) { it.draw(gFurn); });
 
     if (animate && !REDUCED) {
-      svg.classList.remove('is-lit');
       void svg.getBoundingClientRect();
-      svg.classList.add('is-drawing');
-      setTimeout(function () { svg.classList.add('is-lit'); svg.dispatchEvent(new CustomEvent('lit', { bubbles: true })); }, 1900);
+      setAll('is-drawing', true);
+      // сцена строится заранее, под прелоадером; анимации стоят на паузе (CSS) и стартуют после него
+      var startTimers = function () {
+        buildHall.t1 = setTimeout(function () { setAll('is-lit', true); svg.dispatchEvent(new CustomEvent('lit', { bubbles: true })); }, 1900);
+        // интро закончилось: снимаем анимационные стили, слои возвращаются в обычный режим
+        buildHall.t2 = setTimeout(function () { setAll('is-drawing', false); setAll('is-settled', true); }, 4200);
+      };
+      var R = window.VersalReady;
+      if (R && !R.done) R.then(startTimers); else startTimers();
     } else {
-      svg.classList.add('is-lit');
+      setAll('is-lit', true);
+      setAll('is-settled', true);
       svg.dispatchEvent(new CustomEvent('lit', { bubbles: true }));
     }
   }

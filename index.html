@@ -20,9 +20,42 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;500&family=Ysabeau+Office:ital,wght@0,200;0,300;0,400;0,500;1,200;1,300;1,400&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="assets/styles.css?v=20261015-13">
+  <link rel="stylesheet" href="assets/styles.css?v=20261016-2">
   <script src="assets/config.js?v=20261015-3"></script>
-  <script>document.documentElement.classList.add('js');</script>
+  <script>
+    /* прелоадер: только при первом заходе за сессию */
+    (function () {
+      var d = document.documentElement, seen = false;
+      d.classList.add('js');
+      try { seen = sessionStorage.getItem('versal-seen') === '1'; } catch (e) {}
+      var R = window.VersalReady = { done: seen, cbs: [], then: function (f) { if (this.done) f(); else this.cbs.push(f); } };
+      d.classList.add(seen ? 'pl-skip' : 'pl-on');
+    })();
+  </script>
+  <style>
+    .pl { display: none; }
+    .pl-on .pl {
+      position: fixed; inset: 0; z-index: 300; display: grid; place-items: center;
+      background: #f6f7f8; transition: opacity .8s cubic-bezier(.65,0,.35,1), visibility .8s;
+    }
+    .pl-on:not(.pl-done) body { overflow: hidden; }
+    .pl-done .pl { opacity: 0; visibility: hidden; }
+    .pl__in { display: grid; justify-items: center; gap: 18px; }
+    .pl__word {
+      margin: 0 -.42em 0 0; font: 300 30px/1 'Cormorant Garamond', 'Times New Roman', serif;
+      letter-spacing: .42em; text-transform: uppercase; color: #2c3035;
+      opacity: 0; transform: translateY(6px); transition: opacity .9s ease, transform 1.1s cubic-bezier(.2,.7,.1,1);
+    }
+    .pl.is-word .pl__word { opacity: 1; transform: none; }
+    .pl__bar { position: relative; width: 120px; height: 1px; background: #e2e5e8; overflow: hidden; }
+    .pl__bar i {
+      position: absolute; inset: 0; transform-origin: left; transform: scaleX(.06);
+      background: linear-gradient(90deg, #8b9198, #d8dbde 45%, #7a8087);
+      transition: transform .6s cubic-bezier(.2,.7,.1,1);
+    }
+    .pl-done .pl__word { transform: translateY(-6px); }
+    @media (prefers-reduced-motion: reduce) { .pl, .pl__word, .pl__bar i { transition: none !important; } }
+  </style>
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -171,6 +204,47 @@
   </script>
 </head>
 <body>
+  <div class="pl" id="pl" aria-hidden="true">
+    <div class="pl__in">
+      <p class="pl__word">Версаль</p>
+      <span class="pl__bar"><i></i></span>
+    </div>
+  </div>
+  <script>
+    (function () {
+      var R = window.VersalReady, el = document.getElementById('pl');
+      if (!R || R.done || !el) { if (el) el.remove(); return; }
+      var d = document.documentElement, bar = el.querySelector('.pl__bar i');
+      var t0 = performance.now(), total = 0, done = 0, finished = false;
+      function step() { done++; bar.style.transform = 'scaleX(' + (0.06 + 0.94 * done / total).toFixed(3) + ')'; }
+      function track(p) { total++; return Promise.resolve(p).then(step, step); }
+      var F = document.fonts;
+      var brand = F ? F.load('300 30px "Cormorant Garamond"', 'ВЕРСАЛЬ') : Promise.resolve();
+      Promise.resolve(brand).then(function () { el.classList.add('is-word'); }, function () { el.classList.add('is-word'); });
+      var tasks = [
+        track(brand),
+        track(F ? F.load('200 40px "Ysabeau Office"', 'Зал') : 0),
+        track(F ? F.load('300 16px "Ysabeau Office"', 'Зал') : 0),
+        track(F ? F.load('500 13px "Ysabeau Office"', 'Зал') : 0),
+        track(new Promise(function (r) { if (document.readyState === 'complete') r(); else window.addEventListener('load', r, { once: true }); }))
+      ];
+      Promise.all(tasks).then(finish, finish);
+      setTimeout(finish, 4500); // не держим гостя дольше 4,5 с даже на медленной сети
+      function finish() {
+        if (finished) return;
+        finished = true;
+        bar.style.transform = 'scaleX(1)';
+        var rest = Math.max(0, 1200 - (performance.now() - t0));
+        setTimeout(function () {
+          d.classList.add('pl-done');
+          try { sessionStorage.setItem('versal-seen', '1'); } catch (e) {}
+          R.done = true;
+          R.cbs.splice(0).forEach(function (f) { try { f(); } catch (e) { setTimeout(function () { throw e; }); } });
+          setTimeout(function () { el.remove(); }, 900);
+        }, rest + 350);
+      }
+    })();
+  </script>
   <a class="skip-link" href="#request">Перейти к заявке</a>
 
   <!-- ============ Шапка ============ -->
@@ -670,7 +744,7 @@
     <a class="dock__cta" href="#request" data-goal="date" tabindex="-1">Узнать условия на дату</a>
   </div>
 
-  <script src="assets/scene.js?v=20261015-2"></script>
+  <script src="assets/scene.js?v=20261016-2"></script>
   <!-- Окно галереи события -->
   <dialog class="ev-modal" id="ev-modal" aria-labelledby="ev-modal-title">
     <div class="ev-modal__bar">
@@ -689,9 +763,9 @@
   </dialog>
 
   <script src="assets/gallery-data.js?v=20261015-2"></script>
-  <script src="assets/app.js?v=20261015-2"></script>
+  <script src="assets/app.js?v=20261016-2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="assets/staggered-menu.js?v=20261015-2"></script>
+  <script src="assets/staggered-menu.js?v=20261016-2"></script>
   <script src="assets/depth-carousel.js?v=20261015-2"></script>
   <script src="assets/gallery.js?v=20261015-8"></script>
 </body>

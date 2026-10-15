@@ -14,6 +14,11 @@
       set: function (k, v) { try { window[kind].setItem(k, v); } catch (e) {} }
     };
   }
+  // интро первого экрана стартует после прелоадера (или сразу, если его нет)
+  function whenReady(fn) {
+    var R = window.VersalReady;
+    if (R && !R.done) R.then(fn); else fn();
+  }
   var local = store('localStorage');
   var session = store('sessionStorage');
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -94,7 +99,7 @@
       Scene.buildHall(hall, animate);
     };
     hall.addEventListener('lit', function () { hero.classList.add('is-lit'); });
-    build(true);
+    build(true); // анимация сцены сама ждёт окончания прелоадера
     var rt;
     window.addEventListener('resize', function () {
       clearTimeout(rt);
@@ -105,9 +110,11 @@
       }, 200);
     });
   }
-  requestAnimationFrame(function () {
-    hero.classList.add('is-ready');
-    if (shine && !REDUCED) setTimeout(function () { shine.classList.add('is-shining'); }, 700);
+  whenReady(function () {
+    requestAnimationFrame(function () {
+      hero.classList.add('is-ready');
+      if (shine && !REDUCED) setTimeout(function () { shine.classList.add('is-shining'); }, 900);
+    });
   });
 
   // за пределами экрана сцена не рисуется и не мерцает
@@ -119,11 +126,17 @@
 
   // свет за курсором
   if (hero && !REDUCED && window.matchMedia('(hover: hover)').matches) {
+    var light = $('.hero__light'), lx = 0, ly = 0, lightQueued = false;
     hero.addEventListener('pointermove', function (e) {
       var r = hero.getBoundingClientRect();
-      hero.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%');
-      hero.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(1) + '%');
-    });
+      lx = e.clientX - r.left; ly = e.clientY - r.top;
+      if (lightQueued || !light) return;
+      lightQueued = true;
+      requestAnimationFrame(function () {
+        lightQueued = false;
+        light.style.transform = 'translate3d(' + lx.toFixed(0) + 'px,' + ly.toFixed(0) + 'px,0)';
+      });
+    }, { passive: true });
   }
 
   // вход в зал при прокрутке + состояние шапки

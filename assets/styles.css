@@ -136,14 +136,14 @@ main { counter-reset: sec; }
   transition: background-color .3s, color .3s, border-color .3s, transform .3s var(--ease);
 }
 .btn::after { /* серебряный блик */
-  content: ""; position: absolute; z-index: -1; inset: -2px auto -2px -60%;
+  content: ""; position: absolute; z-index: -1; inset: -2px auto -2px 0;
   width: 45%;
   background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
-  transform: skewX(-20deg);
-  transition: left .8s var(--ease);
+  transform: translateX(-135%) skewX(-20deg);
+  transition: transform .8s var(--ease);
   pointer-events: none;
 }
-.btn:hover::after { left: 120%; }
+.btn:hover::after { transform: translateX(270%) skewX(-20deg); }
 .btn--dark { background: var(--ink); color: #fff; }
 .btn--dark:hover { background: #2e3237; }
 .btn--line {
@@ -211,12 +211,14 @@ main { counter-reset: sec; }
 }
 .hero__stage { position: absolute; inset: 0; z-index: 0; transform-origin: 50% 36%; will-change: transform; }
 .hall { width: 100%; height: 100%; }
+.hero__stage .hall { position: absolute; inset: 0; }
 .hero__photo { position: absolute; inset: 0; background: center/cover no-repeat; opacity: 0; transition: opacity 1.2s; }
 .hero.has-photo .hero__photo { opacity: 1; }
 .hero.has-photo .hall { opacity: .0; }
-.hero__light {
-  position: absolute; inset: 0; pointer-events: none;
-  background: radial-gradient(circle 420px at var(--mx, 50%) var(--my, 30%), rgba(255,255,255,.38), rgba(255,255,255,0) 70%);
+.hero__light { /* свет за курсором: двигается трансформацией, без перерисовки */
+  position: absolute; left: 0; top: 0; width: 840px; height: 840px; margin: -420px 0 0 -420px; pointer-events: none;
+  background: radial-gradient(circle closest-side, rgba(255,255,255,.38), rgba(255,255,255,0) 70%);
+  transform: translate3d(50vw, 30vh, 0); will-change: transform;
   opacity: 0; transition: opacity .8s;
 }
 .hero.is-lit .hero__light { opacity: 1; }
@@ -256,8 +258,8 @@ main { counter-reset: sec; }
   font: 500 10.5px/1 var(--sans); letter-spacing: .24em; text-transform: uppercase; text-decoration: none; color: var(--slate);
 }
 .hero__scroll i { width: 1px; height: 30px; background: linear-gradient(var(--steel), transparent); position: relative; overflow: hidden; }
-.hero__scroll i::after { content: ""; position: absolute; left: 0; top: -30px; width: 1px; height: 30px; background: var(--ink); animation: drip 2.4s var(--ease-io) infinite; }
-@keyframes drip { to { top: 30px; } }
+.hero__scroll i::after { content: ""; position: absolute; left: 0; top: 0; width: 1px; height: 30px; background: var(--ink); transform: translateY(-100%); animation: drip 2.4s var(--ease-io) infinite; }
+@keyframes drip { to { transform: translateY(100%); } }
 
 /* интро: появление контента первого экрана */
 .js .hero__content > * { opacity: 0; transform: translateY(16px); transition: opacity 1s var(--ease), transform 1.2s var(--ease); }
@@ -304,10 +306,18 @@ main { counter-reset: sec; }
 
 /* рисование линий */
 .hall.is-drawing .g-arch .ln { stroke-dasharray: 1 1; stroke-dashoffset: 1; animation: draw 2.2s var(--ease-io) var(--d, 0s) forwards; }
-.hall.is-drawing .g-chand .ln, .hall.is-drawing .g-chand .flame { opacity: 0; animation: fadein 1.4s var(--ease) var(--d, .6s) forwards; }
-.hall.is-drawing .piece { opacity: 0; animation: rise 1.3s var(--ease) var(--d, 1.2s) forwards; }
-.hall.is-drawing .floorln, .hall.is-drawing .g-reflect { opacity: 0; animation: fadein 2s var(--ease) 1.4s forwards; }
-.hall.is-drawing .g-reflect { animation-name: fadein-r; }
+.hall.is-drawing .floorln { opacity: 0; animation: fadein 2s var(--ease) 1.4s forwards; }
+/* слои сцены появляются целиком — прозрачность и сдвиг считает видеокарта */
+.hall-layer.is-drawing { will-change: opacity, transform; }
+.hall-layer--chand.is-drawing { opacity: 0; animation: fadein 1.6s var(--ease) .55s forwards; }
+.hall-layer--furn.is-drawing { opacity: 0; animation: layerRise 1.5s var(--ease) 1.05s forwards; }
+.hall-layer--reflect.is-drawing { opacity: 0; animation: fadein 2s var(--ease) 1.4s forwards; }
+.hall-layer--glow { opacity: 0; transition: opacity 1.8s var(--ease); }
+.hall-layer--glow.is-lit { opacity: 1; }
+.hall-layer--glow .glow { opacity: 1; transition: none; }
+.hall-layer--glow .glow--streak { opacity: .55; }
+.hall-layer--glint { will-change: transform; } /* бесконечное мерцание — в отдельном слое */
+@keyframes layerRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes draw { to { stroke-dashoffset: 0; } }
 @keyframes fadein { to { opacity: 1; } }
 @keyframes fadein-r { to { opacity: .28; } }
@@ -1273,3 +1283,6 @@ html.sm-is-open .site-header { box-shadow: none; }
 }
 
 .ev-depth.depth-carousel { display: none; }
+
+/* пока виден прелоадер, интро сцены стоит на паузе */
+.pl-on:not(.pl-done) .hall, .pl-on:not(.pl-done) .hall * { animation-play-state: paused !important; }
